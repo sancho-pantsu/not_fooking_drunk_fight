@@ -3,7 +3,7 @@ DEFAULT_EFFECTS = {}
 
 
 class Player:
-    def __init__(self, models, attacks, cord=0, hp=100, damage=5, speed=15, jump_v=15, effects=DEFAULT_EFFECTS,
+    def __init__(self, models, attacks, cord=0, hp=100, damage=5, speed=7, jump_v=10, effects=DEFAULT_EFFECTS,
                  conditions=DEFAULT_CONDITIONS):
         self.cords = [cord, 0]
         self.HP = hp

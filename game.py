@@ -27,13 +27,13 @@ def load_image(name, colorkey=None):
     return image
 
 
-g = Game(120, 1000, 1, 'ext_beach_sunset.jpg', player.Player([], ['default']),
+g = Game(30, 1000, 1, 'ext_beach_sunset.jpg', player.Player([], ['default']),
          player.Player([], ['default']))
 
 scale = 1
 height = 500
 
-ATTRACTION = 2
+ATTRACTION = 1
 screen = pygame.display.set_mode((g.width * g.cell, height))
 clock = pygame.time.Clock()
 pygame.display.update()
@@ -61,19 +61,29 @@ def calc_jump_move(jump_v, start_cord, last_cord, t):
 
 def move_player1():
     movement1 = [0, 0]
-    if d['a']:
-        movement1[0] -= g.player1.speed
-    if d['d']:
-        movement1[0] += g.player1.speed
     if g.player1.conditions['in_jump']:
         v, strt_cord, last_cord, t = g.player1.jump_v, g.player1.conditions['in_jump'][2], \
                                g.player1.conditions['in_jump'][1], g.player1.conditions['in_jump'][0]
         movement1[1] += calc_jump_move(v, strt_cord, last_cord, t)
+        movement1[0] += g.player1.conditions['in_jump'][3]
+        if d['a']:
+            movement1[0] -= 2
+        if d['d']:
+            movement1[0] += 2
+    else:
+        if d['a']:
+            movement1[0] -= g.player1.speed
+        if d['d']:
+            movement1[0] += g.player1.speed
+
     check_movement(movement1, g.player1)
     g.player1.move(movement1)
 
 
 d = {'a': False, 'd': False, 'w': False}
+
+bg = load_image(g.bg)
+bg = pygame.transform.scale(bg, (g.width * g.cell, height))
 
 while True:
 
@@ -88,6 +98,12 @@ while True:
             elif i.unicode == 'w':
                 if not g.player1.conditions['in_jump']:
                     g.player1.conditions['in_jump'] = [1, g.player1.cords[1], g.player1.cords[1]]
+                    if d['d'] and not d['a']:
+                        g.player1.conditions['in_jump'] += [g.player1.speed]
+                    elif d['a'] and not d['d']:
+                        g.player1.conditions['in_jump'] += [g.player1.speed * -1]
+                    else:
+                        g.player1.conditions['in_jump'] += [0]
                 d['w'] = True
         elif i.type == pygame.KEYUP:
             if i.key == 97:
@@ -99,8 +115,6 @@ while True:
     move_player1()
     g.player2.move([0, 0])
 
-    bg = load_image(g.bg)
-    bg = pygame.transform.scale(bg, (g.width * g.cell, height))
     screen.blit(bg, (0, 0))
 
     pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(g.player1.cords[0] * g.cell, height - 100 - g.player1.cords[1],
