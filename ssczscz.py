@@ -1,15 +1,16 @@
 n = int(input())
-children = [[False] * (n + 1) for _ in range(n + 1)]
-parents = [[False] * (n + 1) for _ in range(n + 1)]
-for i in range(n):
-    for j in input().split():
-        children[i][int(j)] = True
-visited = [False] * (n + 1)
-
-st = []
-for i in range(1, n):
-    if parents[i].count(True) == 0:
-        st += [i]
-
-for i in st:
-    
+s = {0: 1}
+c = 0
+mx = 0
+for i in input():
+    if i == '+':
+        c += 1
+    else:
+        c -= 1
+    if c in s:
+        s[c] += 1
+    else:
+        s[c] = 1
+    if c > mx:
+        mx = c
+print(s[mx])

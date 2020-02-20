@@ -1,9 +1,12 @@
-DEFAULT_CONDITIONS = {'in_jump': [], 'dead': False}
+import os
+import model
+
+DEFAULT_CONDITIONS = {'in_jump': [], 'dead': False, 'staying': True}
 DEFAULT_EFFECTS = {}
 
 
 class Player:
-    def __init__(self, models, attacks, cord=0, hp=100, damage=5, speed=7, jump_v=10, effects=DEFAULT_EFFECTS,
+    def __init__(self, models, attacks, cord=0, hp=100, damage=5, speed=7, jump_v=15, effects=DEFAULT_EFFECTS,
                  conditions=DEFAULT_CONDITIONS):
         self.cords = [cord, 0]
         self.HP = hp
@@ -11,10 +14,11 @@ class Player:
         self.attacks = attacks
         self.effects = effects
         self.conditions = conditions
-        self.models = models
+        self.models = self.load_models(models)
         self.jump_v = jump_v
         self.speed = speed
-        self.width = 50
+        print(self.models)
+        self.width = self.models['default'].sprite.rect.width
 
     def damaged(self, damage):
         self.HP -= damage
@@ -32,3 +36,16 @@ class Player:
     def update_data(self):
         if self.cords[1] == 0:
             self.conditions['in_jump'] = False
+
+    def load_models(self, m):
+        models = {}
+        for i in os.listdir(m):
+            if '.' not in i:
+                models[i] = model.Model([m + '\\' + i + '\\' + x for x in os.listdir(m + '\\' + i)])
+        return models
+
+    def get_image(self, cell, width, height):
+        model = self.models['default']
+        self.models['default'].update(*self.cords, cell, width, height)
+        self.width = model.sprite.rect.width
+        return [model.sprite.image, model.sprite.rect]
