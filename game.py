@@ -91,7 +91,17 @@ def draw():
     screen.blit(bg, (0, 0))
     #  print((g.player1.cords[0] * g.cell, HEIGHT - 500 - g.player1.cords[1]))
     for p in [g.player1, g.player2]:
-        screen.blit(*p.get_image(CELL_SIZE, WIDTH, HEIGHT))
+        m = 'default'
+        print(p.conditions)
+        for i in ['in_jump', 'crouch']:
+            if p.conditions[i]:
+                m = i
+                break
+        print(m)
+        upd = True
+        if p.conditions['staying']:
+            upd = False
+        screen.blit(*p.get_image(m, CELL_SIZE, WIDTH, HEIGHT, upd=upd))
     pygame.display.update()
 
 
@@ -109,6 +119,9 @@ while True:
                 d['a'] = True
             elif i.key == 100:
                 d['d'] = True
+            elif i.key == 115:
+                d['s'] = False
+                g.player1.conditions['crouch'] = True
             elif i.key == 119:
                 if not g.player1.conditions['in_jump']:
                     g.player1.conditions['in_jump'] = [1, g.player1.cords[1], g.player1.cords[1]]
@@ -120,12 +133,16 @@ while True:
                         g.player1.conditions['in_jump'] += [0]
                 d['w'] = True
         elif i.type == pygame.KEYUP:
+            print(i.key)
             if i.key == 97:
                 d['a'] = False
             elif i.key == 100:
                 d['d'] = False
             elif i.key == 119:
                 d['w'] = False
+            elif i.key == 115:
+                d['s'] = False
+                g.player1.conditions['crouch'] = False
     if not (d['a'] and d['d']) and (d['a'] or d['d']):
         g.player1.conditions['staying'] = False
     else:

@@ -28,12 +28,12 @@ class Model(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.sprite = self.frames[self.cur_frame]
 
-    def update(self, x, y, cell, width, height):
-        self.cur_frame = (self.cur_frame + 1) % (len(self.frames))
+    def update(self, x, y, cell, width, height, upd=True):
+        if upd:
+            self.cur_frame = (self.cur_frame + 1) % (len(self.frames))
         self.sprite = self.frames[self.cur_frame]
         self.sprite.rect.x = x * cell + 1
         self.sprite.rect.y = height - self.sprite.rect.height - y * cell
-        print(self.cur_frame)
 
     def reboot(self):
         self.cur_frame = 0
