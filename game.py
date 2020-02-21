@@ -1,5 +1,4 @@
 import player
-import model
 import pygame
 import os
 
@@ -7,9 +6,10 @@ pygame.init()
 
 
 class Game:
-    def __init__(self, fps, width, cell_size, back_ground):
+    def __init__(self, fps, width, height, cell_size, back_ground):
         self.FPS = fps
         self.width = width
+        self.height = height
         self.cell = cell_size
         self.bg = back_ground
         self.all_sprites = pygame.sprite.Group()
@@ -27,17 +27,16 @@ def load_image(name, colorkey=None):
     return image
 
 
-HEIGHT = 500
-WIDTH = 1000
+HEIGHT = 900
+WIDTH = 1600
 CELL_SIZE = 1
+screen = pygame.display.set_mode((WIDTH * CELL_SIZE, HEIGHT * CELL_SIZE))
 
-screen = pygame.display.set_mode((WIDTH * CELL_SIZE, HEIGHT))
-
-g = Game(32, 1000, 1, 'bg.png')
+g = Game(32, WIDTH, HEIGHT, CELL_SIZE, 'bg.png')
 g.player1 = player.Player('D:\\!programming\\Projects\\not_fookin_drunk_fight\\not_fooking_drunk_fight\\sprites\\plr1',
                           ['default'])
 g.player2 = player.Player('D:\\!programming\\Projects\\not_fookin_drunk_fight\\not_fooking_drunk_fight\\sprites\\plr2',
-                          ['default'])
+                          ['default'], cord=2000)
 
 scale = 1
 
@@ -45,6 +44,13 @@ ATTRACTION = 1
 
 clock = pygame.time.Clock()
 pygame.display.update()
+
+
+def calc_jump_move(jump_v, start_cord, last_cord, t, p):
+    cord = start_cord + jump_v * t - ATTRACTION * t ** 2 // 2
+    p.conditions['in_jump'][0] += 1
+    p.conditions['in_jump'][1] = cord
+    return cord - last_cord
 
 
 def check_movement(m, p):
@@ -58,13 +64,6 @@ def check_movement(m, p):
         p.conditions['in_jump'] = False
     else:
         return True
-
-
-def calc_jump_move(jump_v, start_cord, last_cord, t, p):
-    cord = start_cord + jump_v * t - ATTRACTION * t ** 2 // 2
-    p.conditions['in_jump'][0] += 1
-    p.conditions['in_jump'][1] = cord
-    return cord - last_cord
 
 
 def move_player(p):
@@ -90,6 +89,7 @@ def move_player(p):
 def draw():
     screen.blit(bg, (0, 0))
     #  print((g.player1.cords[0] * g.cell, HEIGHT - 500 - g.player1.cords[1]))
+    direction = int(g.player1.cords[0] - g.player2.cords[0] < 0)
     for p in [g.player1, g.player2]:
         m = 'default'
         print(p.conditions)
@@ -101,20 +101,23 @@ def draw():
         upd = True
         if p.conditions['staying']:
             upd = False
-        screen.blit(*p.get_image(m, CELL_SIZE, WIDTH, HEIGHT, upd=upd))
+        im, rct = p.get_image(m, CELL_SIZE, WIDTH, HEIGHT, upd=upd)
+        im = pygame.transform.flip(im, direction, 0)
+        screen.blit(im, rct)
     pygame.display.update()
 
 
 d = {'a': False, 'd': False, 'w': False}
 
 bg = load_image(g.bg)
-bg = pygame.transform.scale(bg, (g.width * g.cell, HEIGHT))
+bg = pygame.transform.scale(bg, (g.width * g.cell, g.height * g.cell))
 
 while True:
     for i in pygame.event.get():
         if i.type == pygame.QUIT:
             exit()
         elif i.type == pygame.KEYDOWN:
+            d[i.key] = True
             if i.key == 97:
                 d['a'] = True
             elif i.key == 100:

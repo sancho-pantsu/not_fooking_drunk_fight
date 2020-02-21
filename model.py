@@ -4,11 +4,12 @@ from PIL import Image
 
 
 def load_image(name, colorkey=-1):
-    image = pygame.image.load(name).convert()
+    image = pygame.image.load(name)
     if colorkey is not None:
         if colorkey == -1:
             colorkey = image.get_at((0, 0))
         image.set_colorkey(colorkey)
+        image = image.convert()
     else:
         image = image.convert_alpha()
     im = Image.open(os.path.join('data', name))

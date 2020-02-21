@@ -18,7 +18,7 @@ class Player:
         self.jump_v = jump_v
         self.speed = speed
         print(self.models)
-        self.width = self.models['default'].sprite.rect.width
+        self.rect = self.models['default'].sprite.rect
 
     def damaged(self, damage):
         self.HP -= damage
@@ -36,6 +36,7 @@ class Player:
     def update_data(self):
         if self.cords[1] == 0:
             self.conditions['in_jump'] = False
+        self.rect = model.sprite.rect
 
     def load_models(self, m):
         models = {}
@@ -47,5 +48,5 @@ class Player:
     def get_image(self, m, cell, width, height, upd=True):
         model = self.models[m]
         self.models[m].update(*self.cords, cell, width, height, upd)
-        self.width = model.sprite.rect.width
+        self.rect = model.sprite.rect
         return [model.sprite.image, model.sprite.rect]
