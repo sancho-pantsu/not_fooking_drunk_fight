@@ -6,7 +6,7 @@ DEFAULT_EFFECTS = {}
 
 
 class Player:
-    def __init__(self, models, attacks, cord=0, hp=100, damage=5, speed=7, jump_v=15, effects=DEFAULT_EFFECTS,
+    def __init__(self, models, attacks, buttons, cord=0, hp=100, damage=5, speed=7, jump_v=15, effects=DEFAULT_EFFECTS,
                  conditions=DEFAULT_CONDITIONS):
         self.cords = [cord, 0]
         self.HP = hp
@@ -17,8 +17,11 @@ class Player:
         self.load_models(models)
         self.jump_v = jump_v
         self.speed = speed
-        print(self.models)
+        self.buttons = buttons
         self.rect = self.models['default'].sprite.rect
+        self.pressed_buttons = {}
+        for i in self.buttons:
+            self.pressed_buttons[self.buttons[i]] = False
 
     def damaged(self, damage):
         self.HP -= damage
@@ -30,12 +33,11 @@ class Player:
         self.cords[1] += movement[1]
 
     def jump_clicked(self, v=5):
-        self.conditions['in_jump'] = True
         self.jump_v = v
 
     def update_data(self):
         if self.cords[1] == 0:
-            self.conditions['in_jump'] = False
+            self.conditions['in_jump'] = []
         self.rect = model.sprite.rect
 
     def load_models(self, m):
