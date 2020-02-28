@@ -1,40 +1,83 @@
+import hitbox
 import pygame
-import os
 from PIL import Image
 
 
-def load_image(name, colorkey=-1):
-    image = pygame.image.load(name)
-    if colorkey is not None:
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-        image = image.convert()
-    else:
-        image = image.convert_alpha()
-    im = Image.open(os.path.join('data', name))
-    width, height = im.size
-    return pygame.transform.scale(image, (250, 250)), pygame.Rect(0, 0, 250, 250)
-
-
 class Model(pygame.sprite.Sprite):
-    def __init__(self, paths):
+    def load_image(self, name, size, colorkey=-1):
+        image = pygame.image.load(name)
+        if colorkey is not None:
+            if colorkey == -1:
+                colorkey = image.get_at((0, 0))
+            image.set_colorkey(colorkey)
+            image = image.convert()
+        else:
+            image = image.convert_alpha()
+        m = Image.open(name)
+        if type(size) != tuple:
+            height, width = m.size
+            self.size = (size, int(size / height * width))
+            size = self.size
+        return pygame.transform.scale(image, size), pygame.Rect(0, 0, *size)
+
+    def __init__(self, paths, size):
         super().__init__()
         self.paths = paths
-        self.frames = []
-        for p in self.paths:
-            sprite = pygame.sprite.Sprite()
-            sprite.image, sprite.rect = load_image(p)
-            self.frames += [sprite]
-        self.cur_frame = 0
-        self.sprite = self.frames[self.cur_frame]
+        self.size = size
+        self.default_frames = []
+        self.crouch_frames = []
+        self.last_cell = 0
+        self.hitbox = False
+        self.crouch_hitboxes = {}
+        self.default_hitboxes = {}
+        frames = [self.default_frames, self.crouch_frames]
+        hitboxes = [self.default_hitboxes, self.crouch_hitboxes]
+        i = 0
+        for folder in self.paths:
+            for p in folder:
+                if '.png' not in p and '.PNG' not in p:
+                    if 'hitbox.txt' in p:
+                        f = open(p)
+                        self.hitbox = hitbox.HitBox(*map(int, f.read().split()))
+                        f.close()
+                    elif '.txt' in p and 'info' not in p:
+                        f = open(p)
+                        hitboxes[i][int(p.split('\\')[-1].split('.')[0])] = hitbox.HitBox(*map(int, f.read().split()))
+                        f.close()
+                    continue
+                sprite = pygame.sprite.Sprite()
+                sprite.image, sprite.rect = self.load_image(p, size)
+                im = sprite.image
+                frames[i] += [(sprite, im, int(p.split('.')[0].split('\\')[-1]))]
+            if self.hitbox:
+                for j in range(len(frames[i])):
+                    hitboxes[i][j] = self.hitbox
+            frames[i].sort(key=lambda x: x[-1])
+            i += 1
+            self.hitbox = False
 
-    def update(self, x, y, cell, width, height, upd=True):
+        self.frames = {'default': self.default_frames, 'crouch': self.crouch_frames}
+        self.hitboxes = {'default': self.default_hitboxes, 'crouch': self.crouch_hitboxes}
+        self.cur_frame = 0
+        self.sprite = self.default_frames[self.cur_frame][0]
+        self.hitbox = self.default_hitboxes[self.cur_frame]
+
+    def update(self, x, y, cell, width, height, crouch=False, upd=True):
+        condition = int(crouch) * 'crouch' + int((crouch + 1) % 2) * 'default'
         if upd:
-            self.cur_frame = (self.cur_frame + 1) % (len(self.frames))
-        self.sprite = self.frames[self.cur_frame]
-        self.sprite.rect.x = x * cell + 1
-        self.sprite.rect.y = height - self.sprite.rect.height - y * cell
+            self.cur_frame = (self.cur_frame + 1) % (len(self.frames[condition]))
+        self.sprite = self.frames[condition][self.cur_frame][0]
+        self.hitbox = self.hitboxes[condition][self.cur_frame]
+        if cell != self.last_cell:
+            self.last_cell = cell
+            self.sprite.image = pygame.transform.scale(self.frames[condition][self.cur_frame][1],
+                                                       (int(self.size[0] * cell), int(self.size[1] * cell)))
+        else:
+            self.sprite.image = self.frames[condition][self.cur_frame][1]
+        self.sprite.rect = pygame.Rect(0, 0, int(self.size[0] * cell), int(self.size[1] * cell))
+        self.sprite.rect.x = int(x * cell) + 1
+        self.sprite.rect.y = int((height - self.sprite.rect.height / cell - y) * cell)
+        self.hitbox.move(self.sprite.rect.x, self.sprite.rect.y)
 
     def reboot(self):
         self.cur_frame = 0
