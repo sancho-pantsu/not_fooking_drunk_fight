@@ -15,10 +15,10 @@ class Model(pygame.sprite.Sprite):
             image = image.convert_alpha()
         m = Image.open(name)
         if type(size) != tuple:
-            height, width = m.size
-            self.size = (size, int(size / height * width))
-            size = self.size
-        return pygame.transform.scale(image, size), pygame.Rect(0, 0, *size)
+            width, height = m.size
+            self.size = (int(size / height * width), size)
+            sze = self.size
+        return pygame.transform.scale(image, sze), pygame.Rect(0, 0, *sze)
 
     def __init__(self, paths, size):
         super().__init__()

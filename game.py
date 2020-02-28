@@ -99,7 +99,6 @@ def check_all_shit():
             p.cords[0] = g.width
         if p.conditions['in_attack'] and not p.conditions['in_attack'].counter:
             p.conditions['in_attack'].reboot()
-            print(p.conditions['in_attack'].cur_frame)
             p.conditions['in_attack'] = False
         if p.conditions['in_attack']:
             for i in g.players:

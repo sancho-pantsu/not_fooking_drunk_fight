@@ -9,8 +9,7 @@ class Attack(model.Model):
         self.damage = damage
         self.cur_damage = damage
         self.effects = effects
-        self.counter = len(self.frames)
-        print(self.frames)
+        self.counter = len(self.frames['default'])
 
     def update(self, x, y, cell, width, height, *another_shit):
         super().update(x, y, cell, width, height, True)
@@ -19,5 +18,5 @@ class Attack(model.Model):
 
     def reboot(self):
         super().reboot()
-        self.counter = len(self.frames)
+        self.counter = len(self.frames['default'])
         self.cur_damage = self.damage
