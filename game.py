@@ -38,8 +38,11 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 
 g = Game(FPS, WIDTH, HEIGHT, CELL_SIZE, 'bg.png')
 PATH = os.getcwd() + '\\sprites\\'
-g.player1 = player.Player(PATH + 'plr1', ['default'], {97: 'left', 100: 'right', 115: 'down', 119: 'up', 118: 'attack'})
-g.player2 = player.Player(PATH + 'plr2', ['default'], {276: 'left', 275: 'right', 274: 'down', 273: 'up', 110: 'attack'}, g.width - 400)
+g.player1 = player.Player(PATH + 'plr1', ['default'], {97: 'left', 100: 'right', 115: 'down', 119: 'up', 118: 'attack'}, g.width - 400)
+g.player2 = player.Player(PATH + 'plr2', ['default'], {276: 'left', 275: 'right', 274: 'down', 273: 'up', 110: 'attack'})
+pygame.display.set_caption('drunk fight')
+icon = load_image('icon.png')
+pygame.display.set_icon(icon)
 
 g.players += [g.player1, g.player2]
 
@@ -66,6 +69,7 @@ def check_movement(m, p):
     if p.cords[1] + m[1] <= 0:
         m[1] = 0
         p.cords[1] = 0
+        #nice
         p.conditions['in_jump'] = False
     else:
         return True
@@ -87,6 +91,10 @@ def move_player(p):
             movement[0] -= p.speed
         if p.pressed_buttons['right'] and not p.conditions['in_attack']:
             movement[0] += p.speed
+    if p.pressed_buttons['down'] and not p.conditions['in_attack']:
+        p.conditions['crouch'] = True
+    elif not p.pressed_buttons['down'] and not p.conditions['in_attack']:
+        p.conditions['crouch'] = False
     check_movement(movement, p)
     p.move(movement)
 
@@ -100,6 +108,10 @@ def check_all_shit():
         if p.conditions['in_attack'] and not p.conditions['in_attack'].counter:
             p.conditions['in_attack'].reboot()
             p.conditions['in_attack'] = False
+
+
+def check_all_shit1():
+    for p in g.players:
         if p.conditions['in_attack']:
             for i in g.players:
                 if id(p) != id(i) and p.conditions['in_attack'].hitbox.collision(i.hitbox):
@@ -122,10 +134,12 @@ def draw():
         upd = True
         if p.conditions['staying']:
             upd = False
-        im, rct = p.get_image(m, CELL_SIZE, WIDTH, HEIGHT, crouch=p.conditions['crouch'], upd=upd)
+        im, rct = p.get_image(m, CELL_SIZE, WIDTH, HEIGHT, direction, crouch=p.conditions['crouch'], upd=upd)
         im = pygame.transform.flip(im, direction, 0)
         screen.blit(im, rct)
-    draw_hitboxes()
+        direction = (direction + 1) % 2
+    #  draw_hitboxes()
+    draw_hp_bars()
     pygame.display.update()
 
 
@@ -134,6 +148,20 @@ def draw_hitboxes():
         pygame.draw.rect(screen, (255, 0, 0), tuple(map(lambda x: int(x * g.cell), p.hitbox.get_rect())))
         if p.conditions['in_attack']:
             pygame.draw.rect(screen, (255, 0, 0), tuple(map(lambda x: int(x * g.cell), p.conditions['in_attack'].hitbox.get_rect())))
+
+
+def draw_hp_bars():
+    width = WIDTH // 2 - 50
+    pygame.draw.rect(screen, (0, 0, 0), (20, 20, width, 50))
+    bar1_width = int(g.players[1].HP / 100 * (width - 4))
+    bar2_width = int(g.players[0].HP / 100 * (width - 4))
+    if bar1_width < 0:
+        bar1_width = 0
+    if bar2_width < 0:
+        bar2_width = 0
+    pygame.draw.rect(screen, (255, 0, 0), (22 + width - 4 - bar1_width, 22, bar1_width, 46))
+    pygame.draw.rect(screen, (0, 0, 0), (WIDTH // 2 + 30, 20, WIDTH // 2 - 50, 50))
+    pygame.draw.rect(screen, (255, 0, 0), (WIDTH // 2 + 32, 22, bar2_width, 46))
 
 
 d = {}
@@ -152,7 +180,7 @@ while True:
                     p.pressed_buttons[p.buttons[key]] = True
                     if p.buttons[key] == 'attack' and not p.conditions['in_attack'] and not p.conditions['in_jump']:
                         p.conditions['in_attack'] = p.models['in_attack']
-                    if p.buttons[key] == 'down':
+                    if p.buttons[key] == 'down' and not p.conditions['in_attack']:
                         p.conditions['crouch'] = True
                     elif p.buttons[key] == 'up' and not p.conditions['in_jump'] and not p.conditions['in_jump']:
                         p.conditions['in_jump'] = [1, p.cords[1], p.cords[1]]
@@ -167,7 +195,7 @@ while True:
             for p in g.players:
                 if key in p.buttons:
                     p.pressed_buttons[p.buttons[key]] = False
-                    if p.buttons[key] == 'down':
+                    if p.buttons[key] == 'down' and not p.conditions['in_attack']:
                         p.conditions['crouch'] = False
     for p in g.players:
         if not (p.pressed_buttons['left'] and p.pressed_buttons['right']) and \
@@ -179,6 +207,7 @@ while True:
         move_player(p)
     check_all_shit()
     draw()
+    check_all_shit1()
     #for p in g.players:
     #    print(p.HP, end=' ')
     #print()

@@ -11,10 +11,12 @@ class Attack(model.Model):
         self.effects = effects
         self.counter = len(self.frames['default'])
 
-    def update(self, x, y, cell, width, height, *another_shit):
-        super().update(x, y, cell, width, height, True)
+    def update(self, x, y, cell, width, height, direction, crouch=False, upd=True):
+        dr = not direction
+        if dr:
+            dr = 'sos'
+        super().update(x, y, cell, width, height, dr, crouch, True)
         self.counter -= 1
-        print(self.counter)
 
     def reboot(self):
         super().reboot()

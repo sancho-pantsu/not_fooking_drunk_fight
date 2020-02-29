@@ -65,9 +65,9 @@ class Player:
                                               '\\crouch')]], self.size)
         self.models = models
 
-    def get_image(self, m, cell, width, height, crouch=False, upd=True):
+    def get_image(self, m, cell, width, height, direction, crouch=False, upd=True):
         model = self.models[m]
-        self.models[m].update(*self.cords, cell, width, height, crouch, upd)
+        self.models[m].update(*self.cords, cell, width, height, direction, crouch=crouch, upd=upd)
         self.rect = model.sprite.rect
         self.hitbox = model.hitbox
         self.model = model

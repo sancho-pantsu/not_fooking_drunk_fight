@@ -9,5 +9,5 @@ for i in os.listdir(p):
         f.close()
         f = open(p + '\\' + i, 'w')
         f.flush()
-        f.write(' '.join([str(int(st[0]) - 10), str(int(st[1]) - 10), str(int(st[2]) + 20), str(int(st[3]))]))
+        f.write(' '.join([str(int(st[0]) - 15), str(int(st[1])), str(int(st[2])), str(int(st[3]))]))
         f.close()

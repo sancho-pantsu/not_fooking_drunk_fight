@@ -62,7 +62,7 @@ class Model(pygame.sprite.Sprite):
         self.sprite = self.default_frames[self.cur_frame][0]
         self.hitbox = self.default_hitboxes[self.cur_frame]
 
-    def update(self, x, y, cell, width, height, crouch=False, upd=True):
+    def update(self, x, y, cell, width, height, direction, crouch=False, upd=True):
         condition = int(crouch) * 'crouch' + int((crouch + 1) % 2) * 'default'
         if upd:
             self.cur_frame = (self.cur_frame + 1) % (len(self.frames[condition]))
@@ -77,7 +77,15 @@ class Model(pygame.sprite.Sprite):
         self.sprite.rect = pygame.Rect(0, 0, int(self.size[0] * cell), int(self.size[1] * cell))
         self.sprite.rect.x = int(x * cell) + 1
         self.sprite.rect.y = int((height - self.sprite.rect.height / cell - y) * cell)
-        self.hitbox.move(self.sprite.rect.x, self.sprite.rect.y)
+        if direction == 'sos':
+            print(direction)
+        if direction == 'sos' and self.size[0] != self.size[1]:
+            self.sprite.rect.x -= (self.size[0] - self.size[1])
+        if direction == 'sos' or direction == 1:
+            self.hitbox.left = self.sprite.rect.x + self.sprite.rect.width - self.hitbox.margin_left - self.hitbox.width
+            self.hitbox.top = self.sprite.rect.y + self.hitbox.margin_top
+        else:
+            self.hitbox.move(self.sprite.rect.x, self.sprite.rect.y)
 
     def reboot(self):
         self.cur_frame = 0
