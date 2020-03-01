@@ -17,37 +17,46 @@ def load_image(name, colorkey=None):
 
 
 main_data = {}
-f = open('main_data.txt')
+f = open('data\\main_data.txt')
 for i in f.readlines():
     var, val = i.split()
-    main_data[var] = int(val)
+    if '.' not in i:
+        main_data[var] = int(val)
+    else:
+        main_data[var] = float(val)
 f.close()
 
 HEIGHT = main_data['HEIGHT']
 WIDTH = main_data['WIDTH']
 CELL_SIZE = main_data['CELL_SIZE']
 FPS = main_data['FPS']
+ATTRACTION = main_data['ATTRACTION']
+
 
 pygame.init()
+pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=4096)
+sounds = {}
+for i in os.listdir(os.getcwd() + '\\data\\sound\\effects\\'):
+    sounds[i.split('.')[0]] = pygame.mixer.Sound('data\\sound\\effects\\' + i)
+sounds['drunk_fight'].play()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+clock = pygame.time.Clock()
+pygame.display.update()
 
-g = game.Game(FPS, WIDTH, HEIGHT, CELL_SIZE, 'bg.png')
-PATH = os.getcwd() + '\\sprites\\'
+#  making this shit beautiful
+
+pygame.display.set_caption('drunk fight')
+icon = load_image('data\\icon.png')
+pygame.display.set_icon(icon)
+
+#  that's all
+
+g = game.Game(FPS, WIDTH, HEIGHT, CELL_SIZE, 'data\\bg.png')
+PATH = os.getcwd() + '\\data\\'
 g.player1 = player.Player(PATH + 'plr1', ['default'], {97: 'left', 100: 'right', 115: 'down', 119: 'up', 118: 'attack'})
 g.player2 = player.Player(PATH + 'plr2', ['default'], {276: 'left', 275: 'right', 274: 'down', 273: 'up', 110: 'attack'})
 g.player2.cords[0] = g.width - g.player2.size
-pygame.display.set_caption('drunk fight')
-icon = load_image('icon.png')
-pygame.display.set_icon(icon)
-
 g.players += [g.player1, g.player2]
-
-scale = 1
-
-ATTRACTION = 0.5
-
-clock = pygame.time.Clock()
-pygame.display.update()
 
 
 def calc_jump_move(jump_v, start_cord, last_cord, t, p):
@@ -83,10 +92,16 @@ def move_player(p):
         if p.pressed_buttons['right']:
             movement[0] += 2
     else:
-        if p.pressed_buttons['left'] and not p.conditions['in_attack']:
-            movement[0] -= p.speed
-        if p.pressed_buttons['right'] and not p.conditions['in_attack']:
-            movement[0] += p.speed
+        if p.pressed_buttons['left']:
+            if p.conditions['in_attack']:
+                movement[0] -= p.speed // 3
+            else:
+                movement[0] -= p.speed
+        if p.pressed_buttons['right']:
+            if p.conditions['in_attack']:
+                movement[0] += p.speed // 3
+            else:
+                movement[0] += p.speed
     if p.pressed_buttons['down'] and not p.conditions['in_attack']:
         p.conditions['crouch'] = True
     elif not p.pressed_buttons['down'] and not p.conditions['in_attack']:
@@ -111,8 +126,9 @@ def check_all_shit1():
         if p.conditions['in_attack']:
             for i in g.players:
                 if id(p) != id(i) and pygame.sprite.collide_mask(p.model.attack_hitbox, i.model):
-                    print('posos')
                     i.damaged(p.model.cur_damage)
+                    if p.model.cur_damage:
+                        i.sound('damaged')
                     p.model.cur_damage = 0
 
 
@@ -134,7 +150,6 @@ def draw():
         im, rct = p.get_image(m, CELL_SIZE, WIDTH, HEIGHT, direction, crouch=p.conditions['crouch'], upd=upd)
         screen.blit(im, rct)
         direction = (direction + 1) % 2
-    #  draw_hitboxes()
     draw_hp_bars()
     pygame.display.update()
 
@@ -159,9 +174,29 @@ def draw_hp_bars():
     pygame.draw.rect(screen, (255, 0, 0), (WIDTH // 2 + 32, 22, bar2_width, 46))
 
 
-d = {}
+def timer(time, reverse=True, drawing=False):
+    counter = 0
+    if time > 15:
+        time = 15
+    frames = [load_image('data\\timer\\' + str(i) + '.png', -1) for i in range(time + 1)]
+    table = int(reverse) * time
+    while counter <= time:
+        if drawing:
+            draw()
+            screen.blit(frames[table], drawing)
+            pygame.display.update()
+        if reverse:
+            table -= 1
+        else:
+            table += 1
+        counter += 1
+        clock.tick(1)
 
+
+d = {}
 bg = load_image(g.bg)
+
+timer(3, True, ((g.width - 200) // 2, (g.height - 200) // 2, 200, 200))
 
 while True:
     for i in pygame.event.get():
@@ -175,11 +210,13 @@ while True:
                     p.pressed_buttons[p.buttons[key]] = True
                     if p.buttons[key] == 'attack' and not p.conditions['in_attack'] and not p.conditions['in_jump']:
                         p.conditions['in_attack'] = True
+                        p.sound('attack')
                         p.model = p.models['in_attack']
                     if p.buttons[key] == 'down' and not p.conditions['in_attack']:
                         p.conditions['crouch'] = True
                     elif p.buttons[key] == 'up' and not p.conditions['in_jump'] and not p.conditions['in_jump']:
                         p.conditions['in_jump'] = [1, p.cords[1], p.cords[1]]
+                        p.sound('jump')
                         if p.pressed_buttons['right'] and not p.pressed_buttons['left']:
                             p.conditions['in_jump'] += [p.speed]
                         elif p.pressed_buttons['left'] and not p.pressed_buttons['right']:
