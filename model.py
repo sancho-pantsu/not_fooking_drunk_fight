@@ -17,75 +17,62 @@ class Model(pygame.sprite.Sprite):
         if type(size) != tuple:
             width, height = m.size
             self.size = (int(size / height * width), size)
-            sze = self.size
-        return pygame.transform.scale(image, sze), pygame.Rect(0, 0, *sze)
+        return pygame.transform.scale(image, self.size), pygame.Rect(0, 0, *self.size)
 
-    def __init__(self, paths, size):
+    def __init__(self, paths, size, attack=False):
         super().__init__()
+        self.attack = attack
         self.paths = paths
         self.size = size
-        self.default_frames = []
-        self.crouch_frames = []
-        self.last_cell = 0
-        self.hitbox = False
-        self.crouch_hitboxes = {}
-        self.default_hitboxes = {}
-        frames = [self.default_frames, self.crouch_frames]
-        hitboxes = [self.default_hitboxes, self.crouch_hitboxes]
+        self.default_common_hitboxes = []
+        self.crouch_common_hitboxes = []
+        common_hitboxes = [self.default_common_hitboxes, self.crouch_common_hitboxes]
         i = 0
+        if attack:
+            self.default_hitboxes = []
+            self.crouch_hitboxes = []
+            hitboxes = [self.default_hitboxes, self.crouch_hitboxes]
         for folder in self.paths:
             for p in folder:
-                if '.png' not in p and '.PNG' not in p:
-                    if 'hitbox.txt' in p:
-                        f = open(p)
-                        self.hitbox = hitbox.HitBox(*map(int, f.read().split()))
-                        f.close()
-                    elif '.txt' in p and 'info' not in p:
-                        f = open(p)
-                        hitboxes[i][int(p.split('\\')[-1].split('.')[0])] = hitbox.HitBox(*map(int, f.read().split()))
-                        f.close()
+                if attack and 'hitbox' in p:
+                    sprite = pygame.sprite.Sprite()
+                    sprite.image, sprite.rect = self.load_image(p, size)
+                    hitboxes[i] += [(sprite, int(p.split('.')[0].split('\\')[-1].replace('hitbox', '')))]
                     continue
-                sprite = pygame.sprite.Sprite()
-                sprite.image, sprite.rect = self.load_image(p, size)
-                im = sprite.image
-                frames[i] += [(sprite, im, int(p.split('.')[0].split('\\')[-1]))]
-            if self.hitbox:
-                for j in range(len(frames[i])):
-                    hitboxes[i][j] = self.hitbox
-            frames[i].sort(key=lambda x: x[-1])
+                im, rect = self.load_image(p, size)
+                common_hitboxes[i] += [(im, int(p.split('.')[0].split('\\')[-1]))]
+            common_hitboxes[i].sort(key=lambda x: x[-1])
+            if attack:
+                hitboxes[i].sort(key=lambda x: x[-1])
             i += 1
-            self.hitbox = False
-
-        self.frames = {'default': self.default_frames, 'crouch': self.crouch_frames}
-        self.hitboxes = {'default': self.default_hitboxes, 'crouch': self.crouch_hitboxes}
+        self.common_hitboxes = {'default': self.default_common_hitboxes, 'crouch': self.crouch_common_hitboxes}
+        if attack:
+            self.attack_hitboxes = {'default': self.default_hitboxes, 'crouch': self.crouch_hitboxes}
         self.cur_frame = 0
-        self.sprite = self.default_frames[self.cur_frame][0]
-        self.hitbox = self.default_hitboxes[self.cur_frame]
+        self.rect = self.default_common_hitboxes[self.cur_frame][0].get_rect()
 
     def update(self, x, y, cell, width, height, direction, crouch=False, upd=True):
         condition = int(crouch) * 'crouch' + int((crouch + 1) % 2) * 'default'
         if upd:
-            self.cur_frame = (self.cur_frame + 1) % (len(self.frames[condition]))
-        self.sprite = self.frames[condition][self.cur_frame][0]
-        self.hitbox = self.hitboxes[condition][self.cur_frame]
-        if cell != self.last_cell:
-            self.last_cell = cell
-            self.sprite.image = pygame.transform.scale(self.frames[condition][self.cur_frame][1],
-                                                       (int(self.size[0] * cell), int(self.size[1] * cell)))
-        else:
-            self.sprite.image = self.frames[condition][self.cur_frame][1]
-        self.sprite.rect = pygame.Rect(0, 0, int(self.size[0] * cell), int(self.size[1] * cell))
-        self.sprite.rect.x = int(x * cell) + 1
-        self.sprite.rect.y = int((height - self.sprite.rect.height / cell - y) * cell)
-        if direction == 'sos':
-            print(direction)
-        if direction == 'sos' and self.size[0] != self.size[1]:
-            self.sprite.rect.x -= (self.size[0] - self.size[1])
-        if direction == 'sos' or direction == 1:
-            self.hitbox.left = self.sprite.rect.x + self.sprite.rect.width - self.hitbox.margin_left - self.hitbox.width
-            self.hitbox.top = self.sprite.rect.y + self.hitbox.margin_top
-        else:
-            self.hitbox.move(self.sprite.rect.x, self.sprite.rect.y)
+            self.cur_frame = (self.cur_frame + 1) % (len(self.common_hitboxes[condition]))
+        if self.attack:
+            self.attack_hitbox = pygame.sprite.Sprite()
+            self.attack_hitbox.image = self.attack_hitboxes[condition][self.cur_frame][0].image.copy()
+            self.attack_hitbox.rect = self.attack_hitboxes[condition][self.cur_frame][0].rect.copy()
+        self.image = self.common_hitboxes[condition][self.cur_frame][0].copy()
+        if direction:
+            self.image = pygame.transform.flip(self.image, 1, 0)
+            if self.attack:
+                self.attack_hitbox.image = pygame.transform.flip(self.attack_hitbox.image, 1, 0)
+        st = [self]
+        if self.attack:
+            st += [self.attack_hitbox]
+        for i in st:
+            i.rect = pygame.Rect(0, 0, self.size[0], self.size[1])
+            i.rect.x = x + 1
+            i.rect.y = height - i.rect.height - y
+            if not direction == 'sos' and self.size[0] != self.size[1]:
+                i.rect.x -= (self.size[0] - self.size[1])
 
     def reboot(self):
         self.cur_frame = 0

@@ -20,7 +20,7 @@ class Player:
         self.size = 500
         self.conditions = conditions.copy()
         self.load_models(models)
-        self.rect = self.models['default'].sprite.rect
+        self.rect = self.models['default'].rect
         self.model = self.models['default']
         self.jump_v = jump_v
         self.speed = speed
@@ -37,14 +37,6 @@ class Player:
     def move(self, movement):
         self.cords[0] += movement[0]
         self.cords[1] += movement[1]
-
-    def jump_clicked(self, v=5):
-        self.jump_v = v
-
-    def update_data(self):
-        if self.cords[1] == 0:
-            self.conditions['in_jump'] = []
-        self.rect = model.sprite.rect
 
     def load_models(self, m):
         models = {}
@@ -68,7 +60,6 @@ class Player:
     def get_image(self, m, cell, width, height, direction, crouch=False, upd=True):
         model = self.models[m]
         self.models[m].update(*self.cords, cell, width, height, direction, crouch=crouch, upd=upd)
-        self.rect = model.sprite.rect
-        self.hitbox = model.hitbox
+        self.rect = model.rect
         self.model = model
-        return [model.sprite.image, model.sprite.rect]
+        return [model.image, model.rect]
