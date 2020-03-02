@@ -140,7 +140,7 @@ def check_all_shit1():
                 if id(p) != id(i) and pygame.sprite.collide_mask(p.model.attack_hitbox, i.model):
                     i.damaged(p.model.cur_damage)
                     if p.model.cur_damage:
-                        i.sound('normal')
+                        i.sound('damaged')
                     p.model.cur_damage = 0
     i = 0
     for p in g.players:
@@ -275,18 +275,22 @@ def call_menu(m, esc):
 
 
 def restart():
-    global g
+    global g, d
     i = 0
     music_box.stop()
+    draw()
+    d = {}
     for p in g.players:
         p.HP = 100
         p.cords = [(g.width - p.size) * i, 0]
+        p.pressed_buttons = {}
+        for b in p.buttons:
+            p.pressed_buttons[p.buttons[b]] = False
         p.conditions = DEFAULT_CONDITIONS.copy()
         p.effects = DEFAULT_EFFECTS.copy()
         for m in p.models:
             p.models[m].reboot()
         i += 1
-    draw()
     timer(4, timer_font, 'Fight!', (255, 0, 0), reverse=True, final_sound=sounds['fight'],
           drawing=(True, g.width//2, g.height//2))
     music_box.load('data\\sound\\music\\main_theme.wav')
