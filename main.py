@@ -146,8 +146,12 @@ def check_all_shit1():
     for p in g.players:
         if p.conditions['dead']:
             music_box.set_volume(0.05)
-            for snd in [p.sound('death', True), g.players[i % 1].sound('win_phrase', True),
-                        g.players[i % 2].sound('win', True)]:
+            snds = [p.sound('death', True)]
+            for pp in g.players:
+                if id(pp) != id(p):
+                    snds += [pp.sound('win_phrase', True)]
+                    snds += [pp.sound('win', True)]
+            for snd in snds:
                 snd.play()
                 pygame.time.delay(int(snd.get_length() * 1000 + 1000))
             call_menu(finish_menu, False)
