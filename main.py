@@ -134,23 +134,24 @@ def check_all_shit():
 
 
 def check_all_shit1():
-    global sos
     for p in g.players:
         if p.conditions['in_attack']:
             for i in g.players:
                 if id(p) != id(i) and pygame.sprite.collide_mask(p.model.attack_hitbox, i.model):
                     i.damaged(p.model.cur_damage)
                     if p.model.cur_damage:
-                        i.sound('damaged')
+                        i.sound('normal')
                     p.model.cur_damage = 0
     i = 0
     for p in g.players:
         if p.conditions['dead']:
             music_box.set_volume(0.05)
-            p.sound('death')
-            g.players[(i + 1) % 2].sound('win_phrase')
-            g.players[(i + 1) % 2].sound('win')
-            call_menu(finish_menu, sos, False)
+            for snd in [p.sound('death', True), g.players[i % 1].sound('win_phrase', True),
+                        g.players[i % 2].sound('win', True)]:
+                snd.play()
+                pygame.time.delay(int(snd.get_length() * 1000 + 1000))
+            call_menu(finish_menu, False)
+            music_box.set_volume(0.2)
             break
 
 
@@ -245,12 +246,10 @@ music_box.load('data\\sound\\music\\main_theme.wav')
 music_box.play(loops=100)
 
 
-def make_sos_true():
-    global sos
-    sos = True
-
-
-def call_menu(m, ss, esc):
+def call_menu(m, esc):
+    draw()
+    music_box.set_volume(0.05)
+    sos = False
     while True:
         pygame.mouse.set_visible(True)
         draw_minimal()
@@ -261,26 +260,29 @@ def call_menu(m, ss, esc):
                 exit()
             elif e.type == pygame.KEYDOWN:
                 if e.key == 27:
-                    ss = esc
+                    sos = esc
                     break
             elif e.type in (pygame.MOUSEBUTTONUP, pygame.MOUSEBUTTONDOWN):
-                m.clicked(e.pos, e.type, e.button)
+                if m.clicked(e.pos, e.type, e.button):
+                    sos = True
+                    break
             elif e.type == pygame.MOUSEMOTION:
                 m.clicked(e.pos)
-        if ss:
+        if sos:
+            music_box.set_volume(0.2)
             pygame.mouse.set_visible(False)
             break
 
 
 def restart():
-    global g, sos
+    global g
     i = 0
     music_box.stop()
     for p in g.players:
         p.HP = 100
         p.cords = [(g.width - p.size) * i, 0]
-        p.conditions = DEFAULT_CONDITIONS
-        p.effects = DEFAULT_EFFECTS
+        p.conditions = DEFAULT_CONDITIONS.copy()
+        p.effects = DEFAULT_EFFECTS.copy()
         for m in p.models:
             p.models[m].reboot()
         i += 1
@@ -289,12 +291,15 @@ def restart():
           drawing=(True, g.width//2, g.height//2))
     music_box.load('data\\sound\\music\\main_theme.wav')
     music_box.play(loops=100)
-    sos = True
+
+
+def nothing():
+    pass
 
 
 def_menu = menu.Menu((g.width, g.height), (0, 0, 0), (640, 180))
-sos = False
 
+def_menu.add_button('continue', nothing)
 def_menu.add_button('restart', restart)
 def_menu.add_button('exit', exit)
 def_menu.render(screen)
@@ -312,8 +317,7 @@ while True:
             d[i.key] = True
             key = i.key
             if key == 27:
-                sos = False
-                call_menu(def_menu, sos, True)
+                call_menu(def_menu, True)
             for p in g.players:
                 if key in p.buttons:
                     p.pressed_buttons[p.buttons[key]] = True

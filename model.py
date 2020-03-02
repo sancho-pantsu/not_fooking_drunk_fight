@@ -1,6 +1,5 @@
 import hitbox
 import pygame
-from PIL import Image
 
 
 class Model(pygame.sprite.Sprite):
@@ -13,9 +12,9 @@ class Model(pygame.sprite.Sprite):
             image = image.convert()
         else:
             image = image.convert_alpha()
-        m = Image.open(name)
         if type(size) != tuple:
-            width, height = m.size
+            rct = image.get_rect()
+            width, height = rct.width, rct.height
             self.size = (int(size / height * width), size)
         return pygame.transform.scale(image, self.size), pygame.Rect(0, 0, *self.size)
 

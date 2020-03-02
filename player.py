@@ -21,7 +21,10 @@ class Player:
         self.sounds = {'normal': [], 'death': [], 'damaged': [], 'attack': [], 'jump': [], 'win': [], 'win_phrase': []}
         for i in os.listdir(data + '\\sound'):
             s = pygame.mixer.Sound(data + '\\sound\\' + i)
-            s.set_volume(1.5)
+            if 'win' in i and 'phrase' not in i:
+                s.set_volume(3)
+            else:
+                s.set_volume(1.5)
             self.sounds[''.join(filter(lambda x: not x.isdecimal(), i.split('.')[0]))] += [s]
         f = open(data + '\\size.txt')
         self.size = tuple(map(int, f.read().split()))
@@ -43,8 +46,10 @@ class Player:
         if self.HP <= 0:
             self.conditions['dead'] = True
 
-    def sound(self, name):
-        return random.choice(self.sounds[name]).play()
+    def sound(self, name, ret=False):
+        if ret:
+            return random.choice(self.sounds[name])
+        random.choice(self.sounds[name]).play()
 
     def move(self, movement):
         self.cords[0] += movement[0]

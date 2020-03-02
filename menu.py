@@ -36,7 +36,9 @@ class Menu:
 
     def clicked(self, pos, type=None, button=None):
         for i in self.buttons:
-            i.update(pos, type, button)
+            if i.update(pos, type, button):
+                return True
+        return False
 
 
 class Button(pygame.sprite.Sprite):
@@ -93,6 +95,7 @@ class Button(pygame.sprite.Sprite):
                         self.func(self.args)
                     else:
                         self.func()
+                    return True
             else:
                 self.reload_image()
                 self.mouse_in = False
