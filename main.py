@@ -1,3 +1,4 @@
+import menu
 import player
 import pygame
 import os
@@ -35,19 +36,26 @@ ATTRACTION = main_data['ATTRACTION']
 
 pygame.init()
 pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=4096)
+music_box = pygame.mixer.music
+music_box.set_volume(0.2)
 sounds = {}
 for i in os.listdir(os.getcwd() + '\\data\\sound\\effects\\'):
-    sounds[i.split('.')[0]] = pygame.mixer.Sound('data\\sound\\effects\\' + i)
+    s = pygame.mixer.Sound('data\\sound\\effects\\' + i)
+    s.set_volume(1.5)
+    sounds[i.split('.')[0]] = s
 sounds['drunk_fight'].play()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 pygame.display.update()
+main_font = pygame.font.Font('data\\fonts\\Helicopta-YwXj.ttf', 200)
+timer_font = pygame.font.Font('data\\fonts\\Youmurdererbb-pwoK.otf', 200)
 
 #  making this shit beautiful
 
 pygame.display.set_caption('drunk fight')
 icon = load_image('data\\icon.png')
 pygame.display.set_icon(icon)
+pygame.mouse.set_visible(False)
 
 #  that's all
 
@@ -94,12 +102,12 @@ def move_player(p):
     else:
         if p.pressed_buttons['left']:
             if p.conditions['in_attack']:
-                movement[0] -= p.speed // 3
+                movement[0] -= p.speed // 2
             else:
                 movement[0] -= p.speed
         if p.pressed_buttons['right']:
             if p.conditions['in_attack']:
-                movement[0] += p.speed // 3
+                movement[0] += p.speed // 2
             else:
                 movement[0] += p.speed
     if p.pressed_buttons['down'] and not p.conditions['in_attack']:
@@ -130,10 +138,18 @@ def check_all_shit1():
                     if p.model.cur_damage:
                         i.sound('damaged')
                     p.model.cur_damage = 0
+    i = 0
+    for p in g.players:
+        if p.conditions['dead']:
+            music_box.set_volume(0.05)
+            p.sound('death')
+            g.players[(i + 1) % 2].sound('win_phrase')
+            g.players[(i + 1) % 2].sound('win')
+            break
 
 
 def draw():
-    global bg
+    global bg, last_draw
     b = pygame.transform.scale(bg, (int(g.width * g.cell), int(g.height * g.cell)))
     screen.fill((0, 0, 0))
     screen.blit(b, (0, 0))
@@ -151,7 +167,12 @@ def draw():
         screen.blit(im, rct)
         direction = (direction + 1) % 2
     draw_hp_bars()
+    last_draw = screen.copy()
     pygame.display.update()
+
+
+def draw_minimal():
+    screen.blit(last_draw, (0, 0))
 
 
 def draw_hitboxes():
@@ -174,29 +195,89 @@ def draw_hp_bars():
     pygame.draw.rect(screen, (255, 0, 0), (WIDTH // 2 + 32, 22, bar2_width, 46))
 
 
-def timer(time, reverse=True, drawing=False):
+def timer(time, fnt, final='0', color=(0, 0, 0), tick=sounds['tick'], final_sound=sounds['fight'],
+          reverse=True, drawing=[]):
     counter = 0
-    if time > 15:
-        time = 15
-    frames = [load_image('data\\timer\\' + str(i) + '.png', -1) for i in range(time + 1)]
-    table = int(reverse) * time
+    if reverse:
+        table = time
+    else:
+        table = 0
     while counter <= time:
-        if drawing:
-            draw()
-            screen.blit(frames[table], drawing)
-            pygame.display.update()
-        if reverse:
-            table -= 1
+        if table == final:
+            final_sound.play()
         else:
-            table += 1
+            tick.play()
+        if drawing:
+            draw_minimal()
+            text = fnt.render(str(table), 0, color)
+            rct = text.get_rect()
+            if drawing[0]:
+                screen.blit(text, (drawing[1] - rct[2] // 2, drawing[2] - rct[3] // 2))
+            else:
+                screen.blit(text, (drawing[1], drawing[2]))
+            pygame.display.update()
         counter += 1
+        if reverse:
+            table = time - counter
+        else:
+            table = counter
+        if not table:
+            table = final
         clock.tick(1)
 
 
 d = {}
 bg = load_image(g.bg)
+last_draw = pygame.Surface((100, 100))
 
-timer(3, True, ((g.width - 200) // 2, (g.height - 200) // 2, 200, 200))
+
+draw()
+timer(1, timer_font, 'Fight!', (255, 0, 0), reverse=True, final_sound=sounds['fight'],
+      drawing=(True, g.width//2, g.height//2))
+
+music_box.load('data\\sound\\music\\main_theme.wav')
+music_box.play(loops=100)
+
+menu = menu.Menu((g.width, g.height), (0, 0, 0), (640, 180))
+sos = False
+
+
+def make_sos_true():
+    global sos
+    sos = True
+
+
+def call_menu():
+    global sos, menu
+    while True:
+        pygame.mouse.set_visible(True)
+        draw_minimal()
+        menu.render(screen)
+        pygame.display.update()
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                exit()
+            elif e.type == pygame.KEYDOWN:
+                if e.key == 27:
+                    sos = True
+                    break
+            elif e.type in (pygame.MOUSEBUTTONUP, pygame.MOUSEBUTTONDOWN):
+                menu.clicked(e.pos, e.type, e.button)
+            elif e.type == pygame.MOUSEMOTION:
+                menu.clicked(e.pos)
+        if sos:
+            pygame.mouse.set_visible(False)
+            break
+
+
+def restart():
+    g.
+
+
+menu.add_button('continue', make_sos_true)
+menu.add_button('exit', exit)
+menu.add_button('restart', exit)
+menu.render(screen)
 
 while True:
     for i in pygame.event.get():
@@ -205,6 +286,9 @@ while True:
         elif i.type == pygame.KEYDOWN:
             d[i.key] = True
             key = i.key
+            if key == 27:
+                sos = False
+                call_menu()
             for p in g.players:
                 if key in p.buttons:
                     p.pressed_buttons[p.buttons[key]] = True
@@ -241,7 +325,5 @@ while True:
     check_all_shit()
     draw()
     check_all_shit1()
-    #for p in g.players:
-    #    print(p.HP, end=' ')
-    #print()
     clock.tick(g.FPS)
+

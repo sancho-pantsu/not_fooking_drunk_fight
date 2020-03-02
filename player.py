@@ -11,17 +11,18 @@ pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=4096)
 
 
 class Player:
-    def __init__(self, data, attacks, buttons, cord=0, hp=100, damage=5, speed=7, jump_v=17, effects=DEFAULT_EFFECTS,
+    def __init__(self, data, attacks, buttons, cord=0, hp=100, damage=5, speed=10, jump_v=17, effects=DEFAULT_EFFECTS,
                  conditions=DEFAULT_CONDITIONS):
         self.cords = [cord, 0]
         self.HP = hp
         self.damage = damage
         self.attacks = attacks
         self.effects = effects.copy()
-        self.sounds = {'damaged': [], 'attack': [], 'jump': []}
+        self.sounds = {'death': [], 'damaged': [], 'attack': [], 'jump': [], 'win': [], 'win_phrase': []}
         for i in os.listdir(data + '\\sound'):
-            self.sounds[''.join(filter(lambda x: x.isalpha(), i.split('.')[0]))] += \
-                [pygame.mixer.Sound(data + '\\sound\\' + i)]
+            s = pygame.mixer.Sound(data + '\\sound\\' + i)
+            s.set_volume(1.5)
+            self.sounds[''.join(filter(lambda x: not x.isdecimal(), i.split('.')[0]))] += [s]
         f = open(data + '\\size.txt')
         self.size = tuple(map(int, f.read().split()))
         f.close()
