@@ -18,7 +18,7 @@ class Player:
         self.damage = damage
         self.attacks = attacks
         self.effects = effects.copy()
-        self.sounds = {'death': [], 'damaged': [], 'attack': [], 'jump': [], 'win': [], 'win_phrase': []}
+        self.sounds = {'normal': [], 'death': [], 'damaged': [], 'attack': [], 'jump': [], 'win': [], 'win_phrase': []}
         for i in os.listdir(data + '\\sound'):
             s = pygame.mixer.Sound(data + '\\sound\\' + i)
             s.set_volume(1.5)

@@ -5,6 +5,10 @@ import os
 import game
 
 
+DEFAULT_CONDITIONS = {'in_jump': [], 'dead': False, 'staying': True, 'crouch': False, 'in_attack': False}
+DEFAULT_EFFECTS = {}
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join(name)
     image = pygame.image.load(fullname).convert()
@@ -130,6 +134,7 @@ def check_all_shit():
 
 
 def check_all_shit1():
+    global sos
     for p in g.players:
         if p.conditions['in_attack']:
             for i in g.players:
@@ -145,6 +150,7 @@ def check_all_shit1():
             p.sound('death')
             g.players[(i + 1) % 2].sound('win_phrase')
             g.players[(i + 1) % 2].sound('win')
+            call_menu(finish_menu, sos, False)
             break
 
 
@@ -232,14 +238,11 @@ last_draw = pygame.Surface((100, 100))
 
 
 draw()
-timer(1, timer_font, 'Fight!', (255, 0, 0), reverse=True, final_sound=sounds['fight'],
+timer(4, timer_font, 'Fight!', (255, 0, 0), reverse=True, final_sound=sounds['fight'],
       drawing=(True, g.width//2, g.height//2))
 
 music_box.load('data\\sound\\music\\main_theme.wav')
 music_box.play(loops=100)
-
-menu = menu.Menu((g.width, g.height), (0, 0, 0), (640, 180))
-sos = False
 
 
 def make_sos_true():
@@ -247,37 +250,59 @@ def make_sos_true():
     sos = True
 
 
-def call_menu():
-    global sos, menu
+def call_menu(m, ss, esc):
     while True:
         pygame.mouse.set_visible(True)
         draw_minimal()
-        menu.render(screen)
+        m.render(screen)
         pygame.display.update()
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 exit()
             elif e.type == pygame.KEYDOWN:
                 if e.key == 27:
-                    sos = True
+                    ss = esc
                     break
             elif e.type in (pygame.MOUSEBUTTONUP, pygame.MOUSEBUTTONDOWN):
-                menu.clicked(e.pos, e.type, e.button)
+                m.clicked(e.pos, e.type, e.button)
             elif e.type == pygame.MOUSEMOTION:
-                menu.clicked(e.pos)
-        if sos:
+                m.clicked(e.pos)
+        if ss:
             pygame.mouse.set_visible(False)
             break
 
 
 def restart():
-    g.
+    global g, sos
+    i = 0
+    music_box.stop()
+    for p in g.players:
+        p.HP = 100
+        p.cords = [(g.width - p.size) * i, 0]
+        p.conditions = DEFAULT_CONDITIONS
+        p.effects = DEFAULT_EFFECTS
+        for m in p.models:
+            p.models[m].reboot()
+        i += 1
+    draw()
+    timer(4, timer_font, 'Fight!', (255, 0, 0), reverse=True, final_sound=sounds['fight'],
+          drawing=(True, g.width//2, g.height//2))
+    music_box.load('data\\sound\\music\\main_theme.wav')
+    music_box.play(loops=100)
+    sos = True
 
 
-menu.add_button('continue', make_sos_true)
-menu.add_button('exit', exit)
-menu.add_button('restart', exit)
-menu.render(screen)
+def_menu = menu.Menu((g.width, g.height), (0, 0, 0), (640, 180))
+sos = False
+
+def_menu.add_button('restart', restart)
+def_menu.add_button('exit', exit)
+def_menu.render(screen)
+
+finish_menu = menu.Menu((g.width, g.height), (0, 0, 0), (640, 180))
+
+finish_menu.add_button('restart', restart)
+finish_menu.add_button('exit', exit)
 
 while True:
     for i in pygame.event.get():
@@ -288,7 +313,7 @@ while True:
             key = i.key
             if key == 27:
                 sos = False
-                call_menu()
+                call_menu(def_menu, sos, True)
             for p in g.players:
                 if key in p.buttons:
                     p.pressed_buttons[p.buttons[key]] = True
