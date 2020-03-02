@@ -54,14 +54,10 @@ pygame.display.update()
 main_font = pygame.font.Font('data\\fonts\\Helicopta-YwXj.ttf', 200)
 timer_font = pygame.font.Font('data\\fonts\\Youmurdererbb-pwoK.otf', 200)
 
-#  making this shit beautiful
-
 pygame.display.set_caption('drunk fight')
 icon = load_image('data\\icon.png')
 pygame.display.set_icon(icon)
 pygame.mouse.set_visible(False)
-
-#  that's all
 
 g = game.Game(FPS, WIDTH, HEIGHT, CELL_SIZE, 'data\\bg.png')
 PATH = os.getcwd() + '\\data\\'
@@ -86,7 +82,6 @@ def check_movement(m, p):
     if p.cords[1] + m[1] <= 0:
         m[1] = 0
         p.cords[1] = 0
-        #nice
         p.conditions['in_jump'] = False
     else:
         return True
@@ -142,10 +137,10 @@ def check_all_shit1():
                     if p.model.cur_damage:
                         i.sound('damaged')
                     p.model.cur_damage = 0
-    i = 0
     for p in g.players:
         if p.conditions['dead']:
             music_box.set_volume(0.05)
+            draw()
             snds = [p.sound('death', True)]
             for pp in g.players:
                 if id(pp) != id(p):
